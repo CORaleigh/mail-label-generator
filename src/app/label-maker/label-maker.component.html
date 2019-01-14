@@ -1,0 +1,9 @@
+<mat-form-field>
+  <mat-select placeholder="Label template" [(value)]="template">
+    <mat-option *ngFor="let template of config" [value]="template">
+      {{template.descriptionPDF.widthLabelIn}}''x{{template.descriptionPDF.heightLabelIn}}'' ({{template.descriptionPDF.labelsPerPage}}/page)
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+<br/>
+<button mat-raised-button color="primary" (click)="print()">Print</button>
