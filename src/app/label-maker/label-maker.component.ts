@@ -210,7 +210,8 @@ config:any[] = [
 ]    
 
   constructor() { }
-  print() {
+  export() {
+
     const doc = new jsPDF({
       orientation: 'portait',
       unit: 'in',
@@ -235,85 +236,55 @@ config:any[] = [
         if (rowLabels[x]) {
           let label:any = rowLabels[x];
           let owner = "";
-          let ownerSplit = doc.splitTextToSize(label.OWNER, spec.labelWidthIn - (spec.insetInX * 2));
+          let ownerSplit = doc.splitTextToSize(label.OWNER, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);
           let addr1 = "";
-          let addr1Split = doc.splitTextToSize(label.ADDR1, spec.labelWidthIn - (spec.insetInX * 2)); 
+          let addr1Split = doc.splitTextToSize(label.ADDR1, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2); 
           let addr2 = "";
-          let addr2Split = doc.splitTextToSize(label.ADDR2, spec.labelWidthIn - (spec.insetInX * 2));  
+          let addr2Split = doc.splitTextToSize(label.ADDR2, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);  
           let addr3 = "";    
           let addr3Split = [];
           if (label.ADDR3) {
 
-            addr3Split = doc.splitTextToSize(label.ADDR3, spec.labelWidthIn - (spec.insetInX * 2));
+            addr3Split = doc.splitTextToSize(label.ADDR3, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);
           }           
 
           let lines:number = ownerSplit.length + addr1Split.length + addr2Split.length + addr3Split.length;
-          let totalLines:number = lines;
 
-          ownerSplit.forEach((split, i) => {
-            if (lines > spec.maxNumLabelLines) {
-              owner = ownerSplit[0];
-              totalLines -= (ownerSplit.length - 1 );
-            } else {
-              if (i < 2) {
 
-                if(split.length > 0) {
-                  owner += split;
-                }
-                if (i < ownerSplit.length - 1 && i < 1) {
-                  owner += '\n';
-                }
-              } else {
-                totalLines -= 1;
-              }
-            }
-
-          });
-          
-
-          addr1Split.forEach((split, i) => {
-
-            if (lines > spec.maxNumLabelLines) {
-              addr1 = addr1Split[0];
-            } else {
-              if (i < 2) {
-                if(split.length > 0) {
-                  addr1 += split;
-                }
-                if (i < addr1Split.length - 1 && i < 1) {
-                  addr1 += '\n';
-                }
-              }
-            }            
-          });
-
-          addr2Split.forEach((split, i) => {
-            if (i < 2) {
-
-              if(split.length > 0) {
-                addr2 += split;
-              }
-              if (i < addr2Split.length - 1 && i < 1) {
-                addr2 += '\n';
-              }
-            }
-          });     
-          if (label.ADDR3) {
-            addr3Split.forEach((split, i) => {
-              if (i < 2) {
-                if(split.length > 0) {
-                  addr3 += split;
-                }
-                if (i < addr3Split.length - 1  && i < 1) {
-                  addr3 += '\n';
-                }
-              }
-            });  
+          if (ownerSplit.length === 1) {
+            owner = ownerSplit[0];
+          } else if (ownerSplit.length === 2) {
+            owner = ownerSplit[0] + '\n' + ownerSplit[1];
           }
-          let value:string = owner + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
-          if (totalLines > spec.maxNumLabelLines ) {
+          if (addr1Split.length === 1) {
+            addr1 = addr1Split[0];
+          } else if (addr1Split.length === 2) {
+            addr1 = addr1Split[0] + '\n' + addr1Split[1];
+          }
+          if (addr2Split.length === 1) {
+            addr2 = addr2Split[0];
+          } else if (addr2Split.length === 2) {
+            addr2 = addr2Split[0] + '\n' + addr2Split[1];
+          }
+          if (addr3Split.length === 1) {
+            addr3 = addr3Split[0];
+          } else if (addr3Split.length === 2) {
+            addr3 = addr3Split[0] + '\n' + addr3Split[1];
+          }
+
+          let value:string = '';
+          if (lines <= spec.maxNumLabelLines + 1){
+            value = owner + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
+          } else {
+            value = ownerSplit[0] + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
+            lines -= 1;
+          }
+
+
+          if (lines > spec.maxNumLabelLines ) {
             doc.setFontSize(spec.fontSizePx - 1);
           }
+
           doc.text(value, 
             (spec.pageLeftIn * x) + spec.horizGapIn + (spec.labelWidthIn * x) + spec.insetInX, 
             (spec.pageTopIn) + spec.vertGapIn + (spec.labelHeightIn * y)+ spec.insetInY, 
