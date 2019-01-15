@@ -251,12 +251,11 @@ config:any[] = [
           let totalLines:number = lines;
 
           ownerSplit.forEach((split, i) => {
-            if (lines > spec.maxNumLabelLines && (addr3Split.length > 0 || spec.numLabelsDown >= 20)) {
+            if (lines > spec.maxNumLabelLines) {
               owner = ownerSplit[0];
               totalLines -= (ownerSplit.length - 1 );
             } else {
               if (i < 2) {
-                totalLines -= (ownerSplit.length - 1 );
 
                 if(split.length > 0) {
                   owner += split;
@@ -264,6 +263,8 @@ config:any[] = [
                 if (i < ownerSplit.length - 1 && i < 1) {
                   owner += '\n';
                 }
+              } else {
+                totalLines -= 1;
               }
             }
 
