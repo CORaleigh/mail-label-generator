@@ -39,7 +39,8 @@ config:any[] = [
       "labelHeightIn": 1,
       "horizGapIn": 0.125,
       "vertGapIn": 0,
-      "insetIn": 0.1,
+      "insetInX": 0.1,
+      "insetInY": 0.2,
       "fontSizePx": 11,
       "maxNumLabelLines": 4
     }
@@ -65,7 +66,8 @@ config:any[] = [
       "labelHeightIn": 1.0025,
       "horizGapIn": 0.1875,
       "vertGapIn": 0,
-      "insetIn": 0.1,
+      "insetInX": 0.1,
+      "insetInY": 0.2,
       "fontSizePx": 11,
       "maxNumLabelLines": 4
     }
@@ -91,7 +93,8 @@ config:any[] = [
       "labelHeightIn": 1.3352,
       "horizGapIn": 0.1875,
       "vertGapIn": 0,
-      "insetIn": 0.1,
+      "insetInX": 0.1,
+      "insetInY": 0.4,
       "fontSizePx": 11,
       "maxNumLabelLines": 6
     }
@@ -117,7 +120,8 @@ config:any[] = [
       "labelHeightIn": 2,
       "horizGapIn": 0.1875,
       "vertGapIn": 0,
-      "insetIn": 0.1,
+      "insetInX": 0.1,
+      "insetInY": 0.6,
       "fontSizePx": 12,
       "maxNumLabelLines": 10
     }
@@ -143,7 +147,8 @@ config:any[] = [
       "labelHeightIn": 3.342,
       "horizGapIn": 0.1875,
       "vertGapIn": 0,
-      "insetIn": 0.1,
+      "insetInX": 0.1,
+      "insetInY": 1.2,
       "fontSizePx": 14,
       "maxNumLabelLines": 12
     }
@@ -169,8 +174,9 @@ config:any[] = [
       "labelHeightIn": 0.50155,
       "horizGapIn": 0.29527575,
       "vertGapIn": 0,
-      "insetIn": 0.1,
-      "fontSizePx": 8,
+      "insetInX": 0.1,
+      "insetInY": 0.1,
+      "fontSizePx": 7,
       "maxNumLabelLines": 3
     }
   },
@@ -195,12 +201,14 @@ config:any[] = [
       "labelHeightIn": 0.6605,
       "horizGapIn": 0.30708678,
       "vertGapIn": 0,
-      "insetIn": 0.1,
+      "insetInX": 0.1,
+      "insetInY": 0.1,
       "fontSizePx": 8,
       "maxNumLabelLines": 4
     }
   }
 ]    
+
   constructor() { }
   print() {
     const doc = new jsPDF({
@@ -225,53 +233,112 @@ config:any[] = [
 
       for (let x = 0; x < spec.numLabelsAcross;x++) {
         if (rowLabels[x]) {
-
           let label:any = rowLabels[x];
-          let ownerW:number = doc.getTextWidth(label.OWNER);
-          let addr1W:number = doc.getTextWidth(label.ADDR1);
-          let addr2W:number = doc.getTextWidth(label.ADDR2);
-
-          if (ownerW > spec.labelWidthIn) {
-          //  label.OWNER =label.OWNER.substr(0,25) + '...';
-          }
-          if (addr1W > spec.labelWidthIn) {
-            console.log(label.ADDR1);
-          }
-          if (addr1W > spec.labelWidthIn) {
-            console.log(label.ADDR2);
-          }          
           let owner = "";
-          let ownerSplit = doc.splitTextToSize(label.OWNER, spec.labelWidthIn);
+          let ownerSplit = doc.splitTextToSize(label.OWNER, spec.labelWidthIn - (spec.insetInX * 2));
+          let addr1 = "";
+          let addr1Split = doc.splitTextToSize(label.ADDR1, spec.labelWidthIn - (spec.insetInX * 2)); 
+          let addr2 = "";
+          let addr2Split = doc.splitTextToSize(label.ADDR2, spec.labelWidthIn - (spec.insetInX * 2));  
+          let addr3 = "";    
+          let addr3Split = [];
+          if (label.ADDR3) {
+
+            addr3Split = doc.splitTextToSize(label.ADDR3, spec.labelWidthIn - (spec.insetInX * 2));
+          }           
+
+          let lines:number = ownerSplit.length + addr1Split.length + addr2Split.length + addr3Split.length;
+          let totalLines:number = lines;
+
           ownerSplit.forEach((split, i) => {
-            if(split.length > 0) {
-              owner += split;
+            if (lines > spec.maxNumLabelLines && (addr3Split.length > 0 || spec.numLabelsDown >= 20)) {
+              owner = ownerSplit[0];
+              totalLines -= (ownerSplit.length - 1 );
+            } else {
+              if (i < 2) {
+                totalLines -= (ownerSplit.length - 1 );
+
+                if(split.length > 0) {
+                  owner += split;
+                }
+                if (i < ownerSplit.length - 1 && i < 1) {
+                  owner += '\n';
+                }
+              }
             }
-            if (i < ownerSplit.length - 1) {
-              owner += '\n';
-            }
+
+          });
+          
+
+          addr1Split.forEach((split, i) => {
+
+            if (lines > spec.maxNumLabelLines) {
+              addr1 = addr1Split[0];
+            } else {
+              if (i < 2) {
+                if(split.length > 0) {
+                  addr1 += split;
+                }
+                if (i < addr1Split.length - 1 && i < 1) {
+                  addr1 += '\n';
+                }
+              }
+            }            
           });
 
-          let value:string = owner + '\n'+ label.ADDR1 + '\n'+ label.ADDR2 + '\n';
+          addr2Split.forEach((split, i) => {
+            if (i < 2) {
+
+              if(split.length > 0) {
+                addr2 += split;
+              }
+              if (i < addr2Split.length - 1 && i < 1) {
+                addr2 += '\n';
+              }
+            }
+          });     
           if (label.ADDR3) {
-            value += label.ADDR3;
+            addr3Split.forEach((split, i) => {
+              if (i < 2) {
+                if(split.length > 0) {
+                  addr3 += split;
+                }
+                if (i < addr3Split.length - 1  && i < 1) {
+                  addr3 += '\n';
+                }
+              }
+            });  
+          }
+          let value:string = owner + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
+          if (totalLines > spec.maxNumLabelLines ) {
+            doc.setFontSize(spec.fontSizePx - 1);
           }
           doc.text(value, 
-            (spec.pageLeftIn * x) + spec.horizGapIn + (spec.labelWidthIn * x), 
-            (spec.pageTopIn) + spec.vertGapIn + (spec.labelHeightIn * y),
-            {baseline: 'top'}
+            (spec.pageLeftIn * x) + spec.horizGapIn + (spec.labelWidthIn * x) + spec.insetInX, 
+            (spec.pageTopIn) + spec.vertGapIn + (spec.labelHeightIn * y)+ spec.insetInY, 
+            {baseline: 'middle'}
           );
+          
+          doc.setFontSize(spec.fontSizePx);
+  
+
   
  
-  
+          doc.setDrawColor(240,240,240);
           doc.rect((spec.pageLeftIn * x) + spec.horizGapIn + (spec.labelWidthIn * x),
           (spec.pageTopIn) + spec.vertGapIn + (spec.labelHeightIn * y), 
           spec.labelWidthIn, 
-          spec.labelHeightIn)
+          spec.labelHeightIn);
+          doc.setDrawColor('black');
+
         }
        }
      }
-     doc.addPage();
-     doc.setLineWidth(0.01);
+     if (p < pages - 1) {
+      doc.addPage();
+
+     }
+     doc.setLineWidth(0.0001);
 
 
    }

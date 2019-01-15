@@ -7,7 +7,7 @@
      >
       <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
     </button>
-    <span>Mailing List Generator</span>
+    <span>Mailing Label Generator</span>
     <!-- <button mat-button *ngIf="!loggedIn" (click)="logInClicked()">Login</button>
     <button mat-button *ngIf="loggedIn" (click)="logOutClicked()">Logout</button> -->
   
@@ -31,6 +31,8 @@
               <p></p>
   
               <app-label-maker [labels]="labels" ></app-label-maker>
+              <p></p>
+
           </div>
             <div id="labels">
               <div *ngFor="let label of labels">

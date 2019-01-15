@@ -11,12 +11,12 @@ import { SharedService } from '../shared.service';
 })
 export class NavComponent implements OnInit {
     // Set our map properties
-    mapCenter = [-78.7, 35.76];
+    mapCenter = [-78.6382, 35.7796];
     basemapType = 'dark-gray-vector';
     mapZoomLevel = 12;
     distance:number = 200;
     labels:any[] = [];
-    private distances:any[] = [
+    distances:any[] = [
      {label: '100 feet', value: 100},
      {label: '200 feet', value: 200},
      {label: '300 feet', value: 300},
