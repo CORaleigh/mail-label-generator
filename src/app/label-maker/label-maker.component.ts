@@ -6,7 +6,7 @@ import * as jsPDF from 'jspdf'
   styleUrls: ['./label-maker.component.css']
 })
 export class LabelMakerComponent implements OnInit {
-  private _labels: any;
+  _labels: any;
   @Input()
   set labels(labels: any[]) {
     this._labels = labels;
