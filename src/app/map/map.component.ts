@@ -150,7 +150,14 @@ export class MapComponent implements OnInit, OnChanges {
               width: 1  // points
             }
           });
+          if (this.route.routeConfig) {
+            if (this.route.routeConfig.path === 'address/:address') {
+              this.route.paramMap.subscribe(params => {
 
+                search.search(params.get('address'));
+              });
+            }
+          }
 
  
         });
@@ -176,11 +183,6 @@ export class MapComponent implements OnInit, OnChanges {
                       this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol);
                     }
                   });
-                });
-              } else if (this.route.routeConfig.path === 'address/:address') {
-                this.route.paramMap.subscribe(params => {
-
-                  search.search(params.get('address'));
                 });
               }
             }

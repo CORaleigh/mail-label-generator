@@ -17,7 +17,33 @@ export class LabelMakerComponent implements OnInit {
   }  
 template:any;
 config:any[] = [
-
+  {
+    "descriptionPDF": {
+      "widthLabelIn": "1-3/4",
+      "heightLabelIn": "2/3",
+      "labelsPerPage": "60",
+      "averyPartNumber": "*95"
+    },
+    "labelSpec": {
+      "type": "AVERY",
+      "pageWidthIn": 8.5,
+      "pageHeightIn": 11,
+      "pageLeftIn": 0.28936983,
+      "pageRightIn": 0.28936983,
+      "pageTopIn": 0.53937037,
+      "pageBottomIn": 0.5511814,
+      "numLabelsAcross": 4,
+      "numLabelsDown": 15,
+      "labelWidthIn": 1.75,
+      "labelHeightIn": 0.6605,
+      "horizGapIn": 0.30708678,
+      "vertGapIn": 0,
+      "insetInX": 0.1,
+      "insetInY": 0.1,
+      "fontSizePx": 8,
+      "maxNumLabelLines": 4
+    }
+  },
   {
     "descriptionPDF": {
       "widthLabelIn": "2-5/8",
@@ -153,65 +179,39 @@ config:any[] = [
       "maxNumLabelLines": 12
     }
   },
-  {
-    "descriptionPDF": {
-      "widthLabelIn": "1-3/4",
-      "heightLabelIn": "1/2",
-      "labelsPerPage": "80",
-      "averyPartNumber": "*67"
-    },
-    "labelSpec": {
-      "type": "AVERY",
-      "pageWidthIn": 8.5,
-      "pageHeightIn": 11,
-      "pageLeftIn": 0.307086375,
-      "pageRightIn": 0.307086375,
-      "pageTopIn": 0.4724412,
-      "pageBottomIn": 0.49606326,
-      "numLabelsAcross": 4,
-      "numLabelsDown": 20,
-      "labelWidthIn": 1.75,
-      "labelHeightIn": 0.50155,
-      "horizGapIn": 0.29527575,
-      "vertGapIn": 0,
-      "insetInX": 0.1,
-      "insetInY": 0.1,
-      "fontSizePx": 7,
-      "maxNumLabelLines": 3
-    }
-  },
-  {
-    "descriptionPDF": {
-      "widthLabelIn": "1-3/4",
-      "heightLabelIn": "2/3",
-      "labelsPerPage": "60",
-      "averyPartNumber": "*95"
-    },
-    "labelSpec": {
-      "type": "AVERY",
-      "pageWidthIn": 8.5,
-      "pageHeightIn": 11,
-      "pageLeftIn": 0.28936983,
-      "pageRightIn": 0.28936983,
-      "pageTopIn": 0.53937037,
-      "pageBottomIn": 0.5511814,
-      "numLabelsAcross": 4,
-      "numLabelsDown": 15,
-      "labelWidthIn": 1.75,
-      "labelHeightIn": 0.6605,
-      "horizGapIn": 0.30708678,
-      "vertGapIn": 0,
-      "insetInX": 0.1,
-      "insetInY": 0.1,
-      "fontSizePx": 8,
-      "maxNumLabelLines": 4
-    }
-  }
+  // {
+  //   "descriptionPDF": {
+  //     "widthLabelIn": "1-3/4",
+  //     "heightLabelIn": "1/2",
+  //     "labelsPerPage": "80",
+  //     "averyPartNumber": "*67"
+  //   },
+  //   "labelSpec": {
+  //     "type": "AVERY",
+  //     "pageWidthIn": 8.5,
+  //     "pageHeightIn": 11,
+  //     "pageLeftIn": 0.307086375,
+  //     "pageRightIn": 0.307086375,
+  //     "pageTopIn": 0.4724412,
+  //     "pageBottomIn": 0.49606326,
+  //     "numLabelsAcross": 4,
+  //     "numLabelsDown": 20,
+  //     "labelWidthIn": 1.75,
+  //     "labelHeightIn": 0.50155,
+  //     "horizGapIn": 0.29527575,
+  //     "vertGapIn": 0,
+  //     "insetInX": 0.1,
+  //     "insetInY": 0.1,
+  //     "fontSizePx": 7,
+  //     "maxNumLabelLines": 3
+  //   }
+  // },
+
 ]    
 
   constructor() { }
   export() {
-
+    
     const doc = new jsPDF({
       orientation: 'portait',
       unit: 'in',
@@ -220,15 +220,10 @@ config:any[] = [
   let spec:any = this.template.labelSpec;
   let per:number = spec.numLabelsAcross * spec.numLabelsDown;
   let pages:number = Math.ceil(this._labels.length/per);
-  
-    console.log(pages);
-   doc.setLineWidth(0.01);
+    doc.setLineWidth(0.01);
    doc.setFontSize(spec.fontSizePx);
    for (let p = 0; p < pages;p++) {
-    console.log(p*per);
-    console.log((p*per)+per);
     let pageLabels:any[] = this._labels.slice(p*per,(p*per)+per);
-    console.log(pageLabels);
      for (let y = 0; y < spec.numLabelsDown;y++) {
       let rowLabels:any[] = pageLabels.slice(y*spec.numLabelsAcross, (y*spec.numLabelsAcross)+spec.numLabelsAcross);
 
@@ -236,59 +231,134 @@ config:any[] = [
         if (rowLabels[x]) {
           let label:any = rowLabels[x];
           let owner = "";
-          let ownerSplit = doc.splitTextToSize(label.OWNER, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);
+          let ownerSplit = [];
+          if (label.OWNER) {
+            ownerSplit = doc.splitTextToSize(label.OWNER, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);
+            if (ownerSplit[ownerSplit.length - 1].trim().length === 0) {
+              ownerSplit.pop();
+            }
+          }
           let addr1 = "";
-          let addr1Split = doc.splitTextToSize(label.ADDR1, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2); 
-          let addr2 = "";
-          let addr2Split = doc.splitTextToSize(label.ADDR2, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);  
+          let addr1Split = [];
+          if (label.ADDR1) {
+            
+            addr1Split = doc.splitTextToSize(label.ADDR1, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2); 
+            if (addr1Split[addr1Split.length - 1].trim().length === 0) {
+              addr1Split.pop();
+            }
+          }
+          let addr2 = "";    
+          let addr2Split = [];
+          if (label.ADDR2) {
+            addr2Split = doc.splitTextToSize(label.ADDR2, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);  
+            if (addr2Split[addr2Split.length - 1].trim().length === 0) {
+              addr2Split.pop();
+            }            
+          }
           let addr3 = "";    
           let addr3Split = [];
           if (label.ADDR3) {
 
             addr3Split = doc.splitTextToSize(label.ADDR3, spec.labelWidthIn - (spec.insetInX * 2)).slice(0,2);
+            if (addr3Split[addr3Split.length - 1].trim().length === 0) {
+              addr3Split.pop();
+            }         
           }           
 
           let lines:number = ownerSplit.length + addr1Split.length + addr2Split.length + addr3Split.length;
 
 
+
+           
+                   
+
           if (ownerSplit.length === 1) {
             owner = ownerSplit[0];
           } else if (ownerSplit.length === 2) {
-            owner = ownerSplit[0] + '\n' + ownerSplit[1];
+            if (label.OWNER.length < 26) {
+              owner = ownerSplit[0] + ' ' + ownerSplit[1];
+              lines -= 1
+
+
+            } else {
+              owner = ownerSplit[0] + '\n' + ownerSplit[1];
+            }
           }
           if (addr1Split.length === 1) {
             addr1 = addr1Split[0];
           } else if (addr1Split.length === 2) {
-            addr1 = addr1Split[0] + '\n' + addr1Split[1];
+            if (label.ADDR1.length < 26) {
+              addr1 = addr1Split[0] + ' ' + addr1Split[1];
+              lines -= 1
+
+            } else {
+
+              addr1 = addr1Split[0] + '\n' + addr1Split[1];
+            }          
           }
           if (addr2Split.length === 1) {
             addr2 = addr2Split[0];
           } else if (addr2Split.length === 2) {
-            addr2 = addr2Split[0] + '\n' + addr2Split[1];
+            if (label.ADDR2.length < 26) {
+              addr2 = addr2Split[0] + ' ' + addr2Split[1];
+              lines -= 1
+
+            } else {
+
+              addr2 = addr2Split[0] + '\n' + addr2Split[1];
+            }
           }
           if (addr3Split.length === 1) {
             addr3 = addr3Split[0];
           } else if (addr3Split.length === 2) {
-            addr3 = addr3Split[0] + '\n' + addr3Split[1];
-          }
+            if (label.ADDR3.length < 26) {
+              addr3 = addr3Split[0] + ' ' + addr3Split[1];
+              lines -= 1
+            } else {
+              addr3 = addr3Split[0] + '\n' + addr3Split[1];
 
+            }
+          }
+          
           let value:string = '';
-          if (lines <= spec.maxNumLabelLines + 1){
-            value = owner + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
-          } else {
+          value = owner + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
+
+          if (lines > spec.maxNumLabelLines + 1 && ownerSplit.length > 1) {
             value = ownerSplit[0] + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
+            owner = ownerSplit[0];
             lines -= 1;
-          }
+          } 
+          if (lines > spec.maxNumLabelLines + 1 && addr1Split.length > 1 && typeof addr1Split[0].substr(0,1) != 'number') {
+            value = owner + '\n'+ addr1Split[0] + '\n'+ addr2 + '\n' + addr3;
+            lines -= 1;
+          }           
+          // if (lines <= spec.maxNumLabelLines + 1){
+          //   value = owner + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
+          // } else {
+            
 
+          //   if (ownerSplit.length > 1) {
+          //     value = ownerSplit[0] + '\n'+ addr1 + '\n'+ addr2 + '\n' + addr3;
+          //     lines -= 1;
 
+          //   } 
+
+          // }
+
+      //    lines = value.split('\n').length;
+
+          let lhf:number = 1.15;
           if (lines > spec.maxNumLabelLines ) {
-            doc.setFontSize(spec.fontSizePx - 1);
+            lhf = 1;
           }
+         // if (lines > spec.maxNumLabelLines  ) {
+           // doc.setFontSize(spec.fontSizePx - .5);
 
+      //    }
           doc.text(value, 
             (spec.pageLeftIn * x) + spec.horizGapIn + (spec.labelWidthIn * x) + spec.insetInX, 
             (spec.pageTopIn) + spec.vertGapIn + (spec.labelHeightIn * y)+ spec.insetInY, 
-            {baseline: 'middle'}
+            {baseline: 'middle', lineHeightFactor: lhf}
           );
           
           doc.setFontSize(spec.fontSizePx);
@@ -320,7 +390,7 @@ config:any[] = [
 doc.save('mailing_labels.pdf') 
   }
   ngOnInit() {
-    this.template = this.config[6];
+    this.template = this.config[0];
 
   }
 

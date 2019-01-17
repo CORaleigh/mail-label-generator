@@ -6,4 +6,4 @@
   </mat-select>
 </mat-form-field>
 <br/>
-<button mat-raised-button color="primary" (click)="export()">Print</button>
+<button mat-raised-button color="primary" (click)="export()" [disabled]="_labels.length < 1">Print</button>
