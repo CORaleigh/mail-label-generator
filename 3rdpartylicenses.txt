@@ -578,6 +578,8 @@ MIT
 
 @angular/material/select
 
+@angular/material/slide-toggle
+
 zone.js
 MIT
 The MIT License
