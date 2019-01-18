@@ -29,6 +29,14 @@
                 </mat-select>
               </mat-form-field>
               <p></p>
+              <section class="example-section">
+                <mat-slide-toggle
+                    class="example-margin"
+                    (change)="addToResultsChange($event)">
+                  Add To Results?
+                </mat-slide-toggle>
+              </section>
+              <p></p>
   
               <app-label-maker [labels]="labels" ></app-label-maker>
               <p></p>
@@ -51,7 +59,7 @@
           [center]="mapCenter"
           [basemap]="basemapType"
           [zoom]="mapZoomLevel">
-        </app-map>
+        </app-map>       
       </mat-sidenav-content>
     </mat-sidenav-container>
 

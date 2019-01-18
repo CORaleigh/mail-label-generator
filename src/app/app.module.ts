@@ -6,7 +6,7 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MapComponent } from './map/map.component';
 import { NavComponent } from './nav/nav.component';
-import { MatSidenavModule, MatToolbarModule, MatSelectModule, MatIconModule, MatButtonModule } from '@angular/material';
+import { MatSidenavModule, MatToolbarModule, MatSelectModule, MatIconModule, MatButtonModule, MatSlideToggleModule } from '@angular/material';
 import { LabelMakerComponent } from './label-maker/label-maker.component';
 
 @NgModule({
@@ -24,7 +24,8 @@ import { LabelMakerComponent } from './label-maker/label-maker.component';
     MatToolbarModule,
     MatSelectModule,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    MatSlideToggleModule
   ],
   providers: [],
   bootstrap: [AppComponent]

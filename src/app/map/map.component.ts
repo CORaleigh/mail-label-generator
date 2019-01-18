@@ -37,13 +37,14 @@ export class MapComponent implements OnInit, OnChanges {
    */
   private _propertyLayer: string = 'https://mapstest.raleighnc.gov/arcgis/rest/services/Property/MapServer/0';
   private _addressLayer: string = 'https://maps.raleighnc.gov/arcgis/rest/services/Energov/DataMap_Energov/MapServer/1';
-
+  private _neighborhoodLayer: string = 'https://services.arcgis.com/v400IkDOw1ad7Yad/arcgis/rest/services/Neighborhoods_copy_3/FeatureServer';
   private _zoom: number = 10;
   private _distance: number = 10;
   private _property:esri.FeatureLayer;
   private _mapView:esri.MapView;
   private _selectedProperty:esri.Graphic;
-
+  private _addToResults:boolean = false;
+  private _labels:any[] = [];
 
   private _center: Array<number> = [0.1278, 51.5074];
   private _basemap: string = 'streets';
@@ -125,18 +126,29 @@ export class MapComponent implements OnInit, OnChanges {
         let property: esri.FeatureLayer = new FeatureLayer(this._propertyLayer);
         this._property = property;
         let addresses: esri.FeatureLayer = new FeatureLayer(this._addressLayer);
-        mapView.map.addMany([property, addresses]);
+        let neighborhoods: esri.FeatureLayer = new FeatureLayer(this._neighborhoodLayer);
+        neighborhoods.visible = false;
+
+        mapView.map.addMany([property, addresses,neighborhoods]);
         search.sources.push(this.getSource(addresses, FeatureLayerSearchSource, 'ADDRESS', 'Address Point', "", "Search by address" ));
+        search.sources.push(this.getSource(property, FeatureLayerSearchSource, 'PIN_NUM', 'PIN #', "", "Search by PIN #" ));
+
         mapView.ui.add(search, {position: 'top-left', index: 0});
         search.on('select-result', event => {
-          property.queryFeatures({returnGeometry: true, outFields: ['*'], 
-          geometry: event.result.feature.geometry, 
-          outSpatialReference: mapView.spatialReference}).then(result => {
-            if (result.features.length > 0) {
-              this._selectedProperty = result.features[0];
-              this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol);
-            }
-          });
+          if (event.source.name === 'Address Point') {
+            property.queryFeatures({returnGeometry: true, outFields: ['*'], 
+            geometry: event.result.feature.geometry, 
+            outSpatialReference: mapView.spatialReference}).then(result => {
+              if (result.features.length > 0) {
+                this._selectedProperty = result.features[0];
+                this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol);
+              }
+            });
+          } else if (event.source.name === 'PIN #') {
+            this._selectedProperty = event.result.feature;
+            this.bufferProperty(mapView, property, event.result.feature, geometryEngine, Graphic, SimpleFillSymbol);            
+          }
+
 
         });
         mapView.whenLayerView(addresses).then((layerView:esri.LayerView) => {
@@ -161,6 +173,26 @@ export class MapComponent implements OnInit, OnChanges {
 
  
         });
+        mapView.whenLayerView(neighborhoods).then((layerView:esri.LayerView) => {
+
+          if (this.route.routeConfig) {
+            if (this.route.routeConfig.path === 'neighborhood/:neighborhood') { 
+              this.route.paramMap.subscribe(params => {
+                neighborhoods.queryFeatures({returnGeometry: true, outFields: ['*'], 
+                where: "Name = '" + params.get('neighborhood') + "'" , 
+                outSpatialReference: mapView.spatialReference}).then(result => {
+                  if (result.features.length > 0) {
+                    let neighborhood:esri.Graphic = result.features[0];
+                    this._mapView.goTo(neighborhood);
+                    this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol, -10);
+                  }
+                });
+              });
+            }
+          }
+
+ 
+        });        
         mapView.whenLayerView(property).then((layerView:esri.LayerView) => {
           (property.renderer as SimpleRenderer).symbol = new SimpleFillSymbol(
             {
@@ -196,9 +228,13 @@ export class MapComponent implements OnInit, OnChanges {
 
   }
 
-  bufferProperty (mapView, property, selectedProperty, geometryEngine, Graphic, SimpleFillSymbol) {
 
-    let buffer = geometryEngine.buffer(selectedProperty.geometry, this._distance, 'feet');
+  bufferProperty (mapView, property, selectedProperty, geometryEngine, Graphic, SimpleFillSymbol, distance?) {
+    debugger
+    if (typeof distance === 'undefined') {
+      distance = this.distance;
+    }
+    let buffer = geometryEngine.buffer(selectedProperty.geometry, distance, 'feet');
 
 
     let g:esri.Graphic = new Graphic();
@@ -213,7 +249,9 @@ export class MapComponent implements OnInit, OnChanges {
        }
      });
      g.symbol = symbol;
-     mapView.graphics.removeAll();
+     if(!this._addToResults) {
+      mapView.graphics.removeAll();
+     }
     mapView.graphics.add(g);
     property.queryFeatures({returnGeometry: true, outFields:['OWNER', 'ADDR1', 'ADDR2', 'ADDR3', 'OBJECTID'], geometry:g.geometry, orderByFields:['SITE_ADDRESS']}).then(result => {
      let oids = [];
@@ -221,15 +259,17 @@ export class MapComponent implements OnInit, OnChanges {
      result.features.forEach(f => {
        oids.push(f.attributes.OBJECTID);
      });
-     let labelatts = [];
+     if (!this._addToResults) {
+       this._labels = [];
+     }
      property.queryRelatedFeatures({objectIds: oids, relationshipId: 0, 
        outFields:['OWNER', 'ADDR1', 'ADDR2', 'ADDR3'],
        outSpatialReference: mapView.spatialReference}).then(relates => {
        result.features.forEach(f => {
          relates[f.attributes.OBJECTID].features.forEach(condo => {
            
-           if (!this.checkDuplicate(labelatts, condo.attributes)) {
-            labelatts.push(condo.attributes);
+           if (!this.checkDuplicate(this._labels, condo.attributes)) {
+            this._labels.push(condo.attributes);
            } else {
              console.log(condo.attributes)
            }
@@ -247,7 +287,7 @@ export class MapComponent implements OnInit, OnChanges {
          });
 
        });
-       this.shared.labels.next(labelatts);
+       this.shared.labels.next(this._labels);
        mapView.goTo({target: result.features}, {duration: 2000});
 
      });
@@ -285,6 +325,9 @@ export class MapComponent implements OnInit, OnChanges {
   }
   ngOnInit() {
     this.initializeMap();
+    this.shared.addToResults.subscribe(addToResults => {
+      this._addToResults = addToResults;
+    });
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -303,6 +346,7 @@ export class MapComponent implements OnInit, OnChanges {
         });
     }
 
-  }  
+  }
+  
 
 }

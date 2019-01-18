@@ -6,5 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class SharedService {
   labels:BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
+  addToResults:BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+
   constructor() { }
 }

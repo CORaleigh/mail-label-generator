@@ -5,7 +5,9 @@ import { NavComponent } from './nav/nav.component';
 const routes: Routes = [
   {path: '', component: NavComponent},
   {path: 'pin/:pin', component: NavComponent},
-  {path: 'address/:address', component: NavComponent}
+  {path: 'address/:address', component: NavComponent},
+  {path: 'neighborhood/:neighborhood', component: NavComponent}
+
 
 ];
 
