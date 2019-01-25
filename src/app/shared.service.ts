@@ -6,6 +6,8 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class SharedService {
   labels:BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
+  selections:BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
+  mapView:BehaviorSubject<any>=new BehaviorSubject<any>(null);
   addToResults:BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor() { }

@@ -87,7 +87,7 @@ export class MapComponent implements OnInit, OnChanges {
   
 
   constructor(private router:Router, private route: ActivatedRoute, private shared:SharedService) { }
-
+  selections:any[] = [];
   async initializeMap() {
     try {
       const [EsriMap, EsriMapView, Search, FeatureLayer, FeatureLayerSearchSource, geometryEngine, Graphic, SimpleFillSymbol, SimpleMarkerSymbol] = await loadModules([
@@ -119,6 +119,7 @@ export class MapComponent implements OnInit, OnChanges {
 
       const mapView: esri.MapView = new EsriMapView(mapViewProperties);
       this._mapView = mapView;
+      this.shared.mapView.next(mapView);
       const search: esri.widgetsSearch = new Search({view: mapView, includeDefaultSources: false, resultGraphicEnabled: false});
       // All resources in the MapView and the map have loaded.
       // Now execute additional processes
@@ -135,18 +136,20 @@ export class MapComponent implements OnInit, OnChanges {
 
         mapView.ui.add(search, {position: 'top-left', index: 0});
         search.on('select-result', event => {
+          let selection:any = {};
+          selection.name = event.result.name;
           if (event.source.name === 'Address Point') {
             property.queryFeatures({returnGeometry: true, outFields: ['*'], 
             geometry: event.result.feature.geometry, 
             outSpatialReference: mapView.spatialReference}).then(result => {
               if (result.features.length > 0) {
                 this._selectedProperty = result.features[0];
-                this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol);
+                this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol, selection);
               }
             });
           } else if (event.source.name === 'PIN #') {
             this._selectedProperty = event.result.feature;
-            this.bufferProperty(mapView, property, event.result.feature, geometryEngine, Graphic, SimpleFillSymbol);            
+            this.bufferProperty(mapView, property, event.result.feature, geometryEngine, Graphic, SimpleFillSymbol, selection);            
           }
 
 
@@ -184,7 +187,8 @@ export class MapComponent implements OnInit, OnChanges {
                   if (result.features.length > 0) {
                     let neighborhood:esri.Graphic = result.features[0];
                     this._mapView.goTo(neighborhood);
-                    this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol, -10);
+                    let selection:any = {name: params.get('neighborhood')};
+                    this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol, selection, -10);
                   }
                 });
               });
@@ -212,7 +216,8 @@ export class MapComponent implements OnInit, OnChanges {
                     if (result.features.length > 0) {
                       this._selectedProperty = result.features[0];
                       this._mapView.goTo(this._selectedProperty);
-                      this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol);
+                      let selection:any ={name: result.features[0].attributes.SITE_ADDRESS}
+                      this.bufferProperty(mapView, property, result.features[0], geometryEngine, Graphic, SimpleFillSymbol, selection);
                     }
                   });
                 });
@@ -228,77 +233,100 @@ export class MapComponent implements OnInit, OnChanges {
 
   }
 
+  checkSelectionExists(selection) {
+    let exists:boolean = false;
+    this.selections.forEach(sel => {
+      if (selection.name === sel.name) {
+        exists = true;
+      }
+    });
+    return exists;
+  }
 
-  bufferProperty (mapView, property, selectedProperty, geometryEngine, Graphic, SimpleFillSymbol, distance?) {
-    debugger
+  bufferProperty (mapView, property, selectedProperty, geometryEngine, Graphic, SimpleFillSymbol, selection, distance?) {
     if (typeof distance === 'undefined') {
       distance = this.distance;
     }
-    let buffer = geometryEngine.buffer(selectedProperty.geometry, distance, 'feet');
-
-
-    let g:esri.Graphic = new Graphic();
-    g.geometry = buffer;
-    let symbol:esri.SimpleFillSymbol = new SimpleFillSymbol(
-    {
-       color: [ 51,51, 204, 0 ],
-       style: "solid",
-       outline: {  // autocasts as new SimpleLineSymbol()
-         color: "red",
-         width: 2
-       }
-     });
-     g.symbol = symbol;
-     if(!this._addToResults) {
-      mapView.graphics.removeAll();
-     }
-    mapView.graphics.add(g);
-    property.queryFeatures({returnGeometry: true, outFields:['OWNER', 'ADDR1', 'ADDR2', 'ADDR3', 'OBJECTID'], geometry:g.geometry, orderByFields:['SITE_ADDRESS']}).then(result => {
-     let oids = [];
-
-     result.features.forEach(f => {
-       oids.push(f.attributes.OBJECTID);
-     });
-     if (!this._addToResults) {
-       this._labels = [];
-     }
-     property.queryRelatedFeatures({objectIds: oids, relationshipId: 0, 
-       outFields:['OWNER', 'ADDR1', 'ADDR2', 'ADDR3'],
-       outSpatialReference: mapView.spatialReference}).then(relates => {
-       result.features.forEach(f => {
-         relates[f.attributes.OBJECTID].features.forEach(condo => {
-           
-           if (!this.checkDuplicate(this._labels, condo.attributes)) {
-            this._labels.push(condo.attributes);
-           } else {
-             console.log(condo.attributes)
-           }
-           f.symbol = new SimpleFillSymbol(
-            {
-               color: [ 51,51, 204, 0 ],
-               style: "solid",
-               outline: {  // autocasts as new SimpleLineSymbol()
-                 color: "yellow",
-                 width: 1
-               }
-             });
-           mapView.graphics.add(f);
-
-         });
-
+    if (!this.checkSelectionExists(selection)) {
+      let buffer = geometryEngine.buffer(selectedProperty.geometry, distance, 'feet');
+      selection.geometry = buffer;
+      selection.id = this.selections.length + 1;
+      let g:esri.Graphic = new Graphic();
+      g.geometry = buffer;
+      let symbol:esri.SimpleFillSymbol = new SimpleFillSymbol(
+      {
+         color: [ 51,51, 204, 0 ],
+         style: "solid",
+         outline: {  // autocasts as new SimpleLineSymbol()
+           color: "red",
+           width: 2
+         }
        });
-       this.shared.labels.next(this._labels);
-       mapView.goTo({target: result.features}, {duration: 2000});
-
-     });
-    });
+       g.symbol = symbol;
+       if(!this._addToResults) {
+        mapView.graphics.removeAll();
+        this.selections = [];
+       }
+      selection.graphics = [];
+      mapView.graphics.add(g);
+      selection.graphics.push(g);
+      property.queryFeatures({returnGeometry: true, outFields:['OWNER', 'ADDR1', 'ADDR2', 'ADDR3', 'OBJECTID'], geometry:g.geometry, orderByFields:['SITE_ADDRESS']}).then(result => {
+       let oids = [];
+  
+       result.features.forEach(f => {
+         oids.push(f.attributes.OBJECTID);
+       });
+       if (!this._addToResults) {
+         this._labels = [];
+       }
+       let count:number = 0;
+       property.queryRelatedFeatures({objectIds: oids, relationshipId: 0, 
+         outFields:['OWNER', 'ADDR1', 'ADDR2', 'ADDR3'],
+         outSpatialReference: mapView.spatialReference}).then(relates => {
+         result.features.forEach(f => {
+           relates[f.attributes.OBJECTID].features.forEach(condo => {
+             
+             if (!this.checkDuplicate(this._labels, condo.attributes, selection.id)) {
+              condo.attributes.id = [selection.id];
+              count += 1;
+              this._labels.push(condo.attributes);
+             } else {
+             
+             }
+             f.symbol = new SimpleFillSymbol(
+              {
+                 color: [ 51,51, 204, 0 ],
+                 style: "solid",
+                 outline: {  // autocasts as new SimpleLineSymbol()
+                   color: "yellow",
+                   width: 1
+                 }
+               });
+             mapView.graphics.add(f);
+             selection.graphics.push(f);
+  
+           });
+  
+         });
+         this.shared.labels.next(this._labels);
+         selection.count = count;
+         this.selections.push(selection);
+         this.shared.selections.next(this.selections);
+         mapView.goTo({target: result.features}, {duration: 2000});
+  
+       });
+      });
+    } else {
+      console.log('exists')
+    }
   }
 
-  checkDuplicate(attributeList:any[], attributes: any) {
+  checkDuplicate(attributeList:any[], attributes: any, id:number) {
     let duplicateFound:boolean = false;
     attributeList.forEach(a => {
       if (a.OWNER === attributes.OWNER && a.ADDR1 === attributes.ADDR1 && a.ADDR2 === attributes.ADDR2 && a.ADDR3 === attributes.ADDR3) {
         duplicateFound = true;
+        a.id.push(id);
       }
     });
     return duplicateFound;
@@ -342,7 +370,8 @@ export class MapComponent implements OnInit, OnChanges {
         'esri/Graphic',
         'esri/symbols/SimpleFillSymbol'
       ]).then(([geometryEngine, Graphic, SimpleFillSymbol]) => {
-          this.bufferProperty(this._mapView, this._property, this._selectedProperty, geometryEngine, Graphic, SimpleFillSymbol);
+          
+          this.bufferProperty(this._mapView, this._property, this._selectedProperty, geometryEngine, Graphic, SimpleFillSymbol, {name:this._selectedProperty.attributes.SITE_ADDRESS});
         });
     }
 
