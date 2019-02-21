@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, ElementRef } from '@angular/core';
 import * as jsPDF from 'jspdf'
 @Component({
   selector: 'app-label-maker',
@@ -7,6 +7,8 @@ import * as jsPDF from 'jspdf'
 })
 export class LabelMakerComponent implements OnInit {
   _labels: any;
+  @ViewChild('exportCsv') private exportCsvEl: ElementRef;
+
   @Input()
   set labels(labels: any[]) {
     this._labels = labels;
@@ -17,6 +19,9 @@ export class LabelMakerComponent implements OnInit {
   }  
 template:any;
 config:any[] = [
+  {
+    "text": "Export CSV"
+  },
   {
     "descriptionPDF": {
       "widthLabelIn": "1-3/4",
@@ -178,7 +183,7 @@ config:any[] = [
       "fontSizePx": 14,
       "maxNumLabelLines": 12
     }
-  },
+  }
   // {
   //   "descriptionPDF": {
   //     "widthLabelIn": "1-3/4",
@@ -210,7 +215,9 @@ config:any[] = [
 ]    
 
   constructor() { }
-  export() {
+
+  createMailLabels () {
+
     
     const doc = new jsPDF({
       orientation: 'portait',
@@ -387,10 +394,45 @@ config:any[] = [
 
 
 
-doc.save('mailing_labels.pdf') 
+doc.save('mailing_labels.pdf')
+  }
+
+  exportCsv() {
+    let csv:string = "data:text/csv;charset=utf-8;,Owner,Address 1,Address 2,Address 3\r\n";
+debugger
+    this._labels.forEach(label => {
+      let owner = label.OWNER;
+      if (!owner) {
+        owner = '';
+      }
+      let addr1 = label.ADDR1;
+      if (!addr1) {
+        addr1 = '';
+      }
+      let addr2 = label.ADDR2;
+      if (!addr2) {
+        addr2 = '';
+      }
+      let addr3 = label.ADDR3;
+      if (!addr3) {
+        addr3 = '';
+      }                  
+      csv += '"' + owner + '","' + addr1 + '","' + addr2 + '","' + addr3 +'"\r\n';
+    });
+    var encodedUri = encodeURI(csv);
+    this.exportCsvEl.nativeElement.href = encodedUri;
+    let el:HTMLElement = this.exportCsvEl.nativeElement as HTMLElement;
+    el.click();
+  }
+  export() { 
+    if (this.template.descriptionPDF) {
+      this.createMailLabels();
+    } else {
+      this.exportCsv();
+    }
   }
   ngOnInit() {
-    this.template = this.config[0];
+    this.template = this.config[1];
 
   }
 

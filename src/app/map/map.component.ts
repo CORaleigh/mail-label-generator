@@ -90,12 +90,14 @@ export class MapComponent implements OnInit, OnChanges {
   selections:any[] = [];
   async initializeMap() {
     try {
-      const [EsriMap, EsriMapView, Search, FeatureLayer, FeatureLayerSearchSource, geometryEngine, Graphic, SimpleFillSymbol, SimpleMarkerSymbol] = await loadModules([
+      const [EsriMap, EsriMapView, Search, FeatureLayer, FeatureLayerSearchSource, LocatorSearchSource, Locator, geometryEngine, Graphic, SimpleFillSymbol, SimpleMarkerSymbol] = await loadModules([
         'esri/Map',
         'esri/views/MapView',
         'esri/widgets/Search',
         'esri/layers/FeatureLayer',
         'esri/widgets/Search/FeatureLayerSearchSource',
+        'esri/widgets/Search/LocatorSearchSource',
+        "esri/tasks/Locator",
         'esri/geometry/geometryEngine',
         'esri/Graphic',
         'esri/symbols/SimpleFillSymbol',
@@ -131,7 +133,13 @@ export class MapComponent implements OnInit, OnChanges {
         neighborhoods.visible = false;
 
         mapView.map.addMany([property, addresses,neighborhoods]);
-        search.sources.push(this.getSource(addresses, FeatureLayerSearchSource, 'ADDRESS', 'Address Point', "", "Search by address" ));
+        let locatorSource:esri.LocatorSearchSource = new LocatorSearchSource({
+          locator: new Locator({url: 'https://maps.raleighnc.gov/arcgis/rest/services/Locators/RaleighAddresses/GeocodeServer'}),
+          outFields:["StAddr"]
+
+        });
+        search.sources.push(locatorSource);
+        //search.sources.push(this.getSource(addresses, FeatureLayerSearchSource, 'ADDRESS', 'Address Point', "", "Search by address" ));
         search.sources.push(this.getSource(property, FeatureLayerSearchSource, 'PIN_NUM', 'PIN #', "", "Search by PIN #" ));
 
         mapView.ui.add(search, {position: 'top-left', index: 0});
