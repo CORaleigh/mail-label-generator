@@ -563,18 +563,20 @@ MIT
 
 @angular/material/core
 
+@angular/forms
+MIT
+
+@angular/material/list
+
+@angular/material/icon
+
 @angular/material/toolbar
 
 @angular/material/button
 
-@angular/material/icon
-
 @angular/material/sidenav
 
 @angular/material/form-field
-
-@angular/forms
-MIT
 
 @angular/material/select
 
